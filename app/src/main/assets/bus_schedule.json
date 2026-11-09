@@ -1,0 +1,635 @@
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "updatedAt": "2026-11-07",
+  "timezone": "Europe/Kyiv",
+  "source": "Надані користувачем schedule.py та BusTrafficService.py",
+  "notes": [
+    "Години відправлення та зміщення взяті із серверних файлів. Номер маршруту збережено явно.",
+    "Це розрахунок за розкладом, не GPS. Координати не включені.",
+    "Історичні винятки перенесено з schedule.py. Майбутні свята автоматично не призначаються."
+  ],
+  "stops": [
+    {
+      "id": "stop_01",
+      "name": "Бронниця"
+    },
+    {
+      "id": "stop_02",
+      "name": "Нижній магазин"
+    },
+    {
+      "id": "stop_03",
+      "name": "П’ята колона"
+    },
+    {
+      "id": "stop_04",
+      "name": "Військова частина"
+    },
+    {
+      "id": "stop_05",
+      "name": "Консервний завод"
+    },
+    {
+      "id": "stop_06",
+      "name": "119-й район"
+    },
+    {
+      "id": "stop_07",
+      "name": "Магазин «Ельф», Прибори"
+    },
+    {
+      "id": "stop_08",
+      "name": "Школа № 3, Полкова церква"
+    },
+    {
+      "id": "stop_09",
+      "name": "Проспект Незалежності"
+    },
+    {
+      "id": "stop_10",
+      "name": "Площа ім. Гоголя"
+    },
+    {
+      "id": "stop_11",
+      "name": "Центр, Укрпошта"
+    },
+    {
+      "id": "stop_12",
+      "name": "Ринок"
+    },
+    {
+      "id": "stop_13",
+      "name": "Ощадбанк"
+    },
+    {
+      "id": "stop_14",
+      "name": "Монтажний технікум"
+    },
+    {
+      "id": "stop_15",
+      "name": "Машинобудівний завод"
+    },
+    {
+      "id": "stop_16",
+      "name": "Школа № 5, Нова пошта"
+    },
+    {
+      "id": "stop_17",
+      "name": "Лікарня"
+    },
+    {
+      "id": "stop_18",
+      "name": "Верхня Немія"
+    },
+    {
+      "id": "stop_19",
+      "name": "Залізничний вокзал"
+    },
+    {
+      "id": "stop_20",
+      "name": "Маслозавод"
+    },
+    {
+      "id": "stop_21",
+      "name": "Автовокзал"
+    },
+    {
+      "id": "stop_22",
+      "name": "Школа № 2"
+    },
+    {
+      "id": "stop_23",
+      "name": "Пристань, «Вацак»"
+    }
+  ],
+  "routes": [
+    {
+      "id": "1",
+      "number": "1",
+      "label": "Маршрут № 1",
+      "events": [
+        {
+          "id": "r1_e01",
+          "stopId": "stop_01",
+          "direction": "Немії",
+          "offsetMinutes": 0
+        },
+        {
+          "id": "r1_e02",
+          "stopId": "stop_02",
+          "direction": "Немії",
+          "offsetMinutes": 7
+        },
+        {
+          "id": "r1_e03",
+          "stopId": "stop_03",
+          "direction": "Немії",
+          "offsetMinutes": 8
+        },
+        {
+          "id": "r1_e04",
+          "stopId": "stop_04",
+          "direction": "Немії",
+          "offsetMinutes": 11
+        },
+        {
+          "id": "r1_e05",
+          "stopId": "stop_05",
+          "direction": "Немії",
+          "offsetMinutes": 12
+        },
+        {
+          "id": "r1_e06",
+          "stopId": "stop_06",
+          "direction": "Немії",
+          "offsetMinutes": 14
+        },
+        {
+          "id": "r1_e07",
+          "stopId": "stop_07",
+          "direction": "Немії",
+          "offsetMinutes": 16
+        },
+        {
+          "id": "r1_e08",
+          "stopId": "stop_08",
+          "direction": "Немії",
+          "offsetMinutes": 18
+        },
+        {
+          "id": "r1_e09",
+          "stopId": "stop_09",
+          "direction": "Немії",
+          "offsetMinutes": 20
+        },
+        {
+          "id": "r1_e10",
+          "stopId": "stop_10",
+          "direction": "Немії",
+          "offsetMinutes": 22
+        },
+        {
+          "id": "r1_e11",
+          "stopId": "stop_11",
+          "direction": "Немії",
+          "offsetMinutes": 24
+        },
+        {
+          "id": "r1_e12",
+          "stopId": "stop_12",
+          "direction": "Немії",
+          "offsetMinutes": 26
+        },
+        {
+          "id": "r1_e13",
+          "stopId": "stop_13",
+          "direction": "Немії",
+          "offsetMinutes": 28
+        },
+        {
+          "id": "r1_e14",
+          "stopId": "stop_14",
+          "direction": "Немії",
+          "offsetMinutes": 29
+        },
+        {
+          "id": "r1_e15",
+          "stopId": "stop_15",
+          "direction": "Немії",
+          "offsetMinutes": 30
+        },
+        {
+          "id": "r1_e16",
+          "stopId": "stop_16",
+          "direction": "Немії",
+          "offsetMinutes": 32
+        },
+        {
+          "id": "r1_e17",
+          "stopId": "stop_17",
+          "direction": "Немії",
+          "offsetMinutes": 33
+        },
+        {
+          "id": "r1_e18",
+          "stopId": "stop_18",
+          "direction": "Залізничного вокзалу",
+          "offsetMinutes": 37
+        },
+        {
+          "id": "r1_e19",
+          "stopId": "stop_19",
+          "direction": "Бронниці",
+          "offsetMinutes": 38
+        },
+        {
+          "id": "r1_e20",
+          "stopId": "stop_20",
+          "direction": "Бронниці",
+          "offsetMinutes": 42
+        },
+        {
+          "id": "r1_e21",
+          "stopId": "stop_21",
+          "direction": "Бронниці",
+          "offsetMinutes": 43
+        },
+        {
+          "id": "r1_e22",
+          "stopId": "stop_22",
+          "direction": "Бронниці",
+          "offsetMinutes": 45
+        },
+        {
+          "id": "r1_e23",
+          "stopId": "stop_12",
+          "direction": "Бронниці",
+          "offsetMinutes": 48
+        },
+        {
+          "id": "r1_e24",
+          "stopId": "stop_11",
+          "direction": "Бронниці",
+          "offsetMinutes": 50
+        },
+        {
+          "id": "r1_e25",
+          "stopId": "stop_23",
+          "direction": "Бронниці",
+          "offsetMinutes": 52
+        },
+        {
+          "id": "r1_e26",
+          "stopId": "stop_10",
+          "direction": "Бронниці",
+          "offsetMinutes": 53
+        },
+        {
+          "id": "r1_e27",
+          "stopId": "stop_09",
+          "direction": "Бронниці",
+          "offsetMinutes": 54
+        },
+        {
+          "id": "r1_e28",
+          "stopId": "stop_08",
+          "direction": "Бронниці",
+          "offsetMinutes": 57
+        },
+        {
+          "id": "r1_e29",
+          "stopId": "stop_07",
+          "direction": "Бронниці",
+          "offsetMinutes": 58
+        },
+        {
+          "id": "r1_e30",
+          "stopId": "stop_06",
+          "direction": "Бронниці",
+          "offsetMinutes": 60
+        },
+        {
+          "id": "r1_e31",
+          "stopId": "stop_05",
+          "direction": "Бронниці",
+          "offsetMinutes": 62
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "number": "2",
+      "label": "Маршрут № 2",
+      "events": [
+        {
+          "id": "r2_e01",
+          "stopId": "stop_01",
+          "direction": "Немії",
+          "offsetMinutes": 0
+        },
+        {
+          "id": "r2_e02",
+          "stopId": "stop_02",
+          "direction": "Немії",
+          "offsetMinutes": 7
+        },
+        {
+          "id": "r2_e03",
+          "stopId": "stop_03",
+          "direction": "Немії",
+          "offsetMinutes": 8
+        },
+        {
+          "id": "r2_e04",
+          "stopId": "stop_04",
+          "direction": "Немії",
+          "offsetMinutes": 11
+        },
+        {
+          "id": "r2_e05",
+          "stopId": "stop_05",
+          "direction": "Немії",
+          "offsetMinutes": 12
+        },
+        {
+          "id": "r2_e06",
+          "stopId": "stop_06",
+          "direction": "Немії",
+          "offsetMinutes": 14
+        },
+        {
+          "id": "r2_e07",
+          "stopId": "stop_07",
+          "direction": "Немії",
+          "offsetMinutes": 16
+        },
+        {
+          "id": "r2_e08",
+          "stopId": "stop_08",
+          "direction": "Немії",
+          "offsetMinutes": 18
+        },
+        {
+          "id": "r2_e09",
+          "stopId": "stop_09",
+          "direction": "Немії",
+          "offsetMinutes": 20
+        },
+        {
+          "id": "r2_e10",
+          "stopId": "stop_10",
+          "direction": "Немії",
+          "offsetMinutes": 22
+        },
+        {
+          "id": "r2_e11",
+          "stopId": "stop_11",
+          "direction": "Немії",
+          "offsetMinutes": 24
+        },
+        {
+          "id": "r2_e12",
+          "stopId": "stop_12",
+          "direction": "Немії",
+          "offsetMinutes": 26
+        },
+        {
+          "id": "r2_e13",
+          "stopId": "stop_22",
+          "direction": "Немії",
+          "offsetMinutes": 28
+        },
+        {
+          "id": "r2_e14",
+          "stopId": "stop_21",
+          "direction": "Немії",
+          "offsetMinutes": 30
+        },
+        {
+          "id": "r2_e15",
+          "stopId": "stop_20",
+          "direction": "Немії",
+          "offsetMinutes": 31
+        },
+        {
+          "id": "r2_e16",
+          "stopId": "stop_19",
+          "direction": "Немії",
+          "offsetMinutes": 33
+        },
+        {
+          "id": "r2_e17",
+          "stopId": "stop_18",
+          "direction": "Лікарні",
+          "offsetMinutes": 34
+        },
+        {
+          "id": "r2_e18",
+          "stopId": "stop_17",
+          "direction": "Бронниці",
+          "offsetMinutes": 38
+        },
+        {
+          "id": "r2_e19",
+          "stopId": "stop_16",
+          "direction": "Бронниці",
+          "offsetMinutes": 41
+        },
+        {
+          "id": "r2_e20",
+          "stopId": "stop_15",
+          "direction": "Бронниці",
+          "offsetMinutes": 42
+        },
+        {
+          "id": "r2_e21",
+          "stopId": "stop_14",
+          "direction": "Бронниці",
+          "offsetMinutes": 43
+        },
+        {
+          "id": "r2_e22",
+          "stopId": "stop_13",
+          "direction": "Бронниці",
+          "offsetMinutes": 45
+        },
+        {
+          "id": "r2_e23",
+          "stopId": "stop_12",
+          "direction": "Бронниці",
+          "offsetMinutes": 48
+        },
+        {
+          "id": "r2_e24",
+          "stopId": "stop_11",
+          "direction": "Бронниці",
+          "offsetMinutes": 50
+        },
+        {
+          "id": "r2_e25",
+          "stopId": "stop_23",
+          "direction": "Бронниці",
+          "offsetMinutes": 52
+        },
+        {
+          "id": "r2_e26",
+          "stopId": "stop_10",
+          "direction": "Бронниці",
+          "offsetMinutes": 53
+        },
+        {
+          "id": "r2_e27",
+          "stopId": "stop_09",
+          "direction": "Бронниці",
+          "offsetMinutes": 54
+        },
+        {
+          "id": "r2_e28",
+          "stopId": "stop_08",
+          "direction": "Бронниці",
+          "offsetMinutes": 57
+        },
+        {
+          "id": "r2_e29",
+          "stopId": "stop_07",
+          "direction": "Бронниці",
+          "offsetMinutes": 58
+        },
+        {
+          "id": "r2_e30",
+          "stopId": "stop_06",
+          "direction": "Бронниці",
+          "offsetMinutes": 60
+        },
+        {
+          "id": "r2_e31",
+          "stopId": "stop_05",
+          "direction": "Бронниці",
+          "offsetMinutes": 62
+        }
+      ]
+    }
+  ],
+  "profiles": {
+    "workday": {
+      "label": "Будній день",
+      "departures": {
+        "1": [
+          "05:20",
+          "06:10",
+          "06:45",
+          "07:15",
+          "07:45",
+          "08:15",
+          "08:45",
+          "09:15",
+          "09:55",
+          "10:35",
+          "11:15",
+          "11:55",
+          "12:35",
+          "13:25",
+          "14:15",
+          "15:00",
+          "15:40",
+          "16:20",
+          "16:50",
+          "17:20",
+          "17:50",
+          "18:40",
+          "19:45"
+        ],
+        "2": [
+          "05:40",
+          "06:30",
+          "07:00",
+          "07:30",
+          "08:00",
+          "08:30",
+          "09:00",
+          "09:35",
+          "10:15",
+          "10:55",
+          "11:35",
+          "12:15",
+          "13:00",
+          "13:50",
+          "14:40",
+          "15:20",
+          "16:00",
+          "16:35",
+          "17:05",
+          "17:35",
+          "18:10",
+          "19:10"
+        ]
+      }
+    },
+    "weekend": {
+      "label": "Вихідний день",
+      "departures": {
+        "1": [
+          "05:20",
+          "06:10",
+          "06:50",
+          "07:30",
+          "08:10",
+          "08:50",
+          "09:30",
+          "10:10",
+          "10:50",
+          "11:30",
+          "12:10",
+          "12:50",
+          "13:30",
+          "14:10",
+          "14:50",
+          "15:35",
+          "16:25",
+          "17:15",
+          "18:10",
+          "19:10"
+        ],
+        "2": [
+          "05:40",
+          "06:30",
+          "07:10",
+          "07:50",
+          "08:30",
+          "09:10",
+          "09:50",
+          "10:30",
+          "11:10",
+          "11:50",
+          "12:30",
+          "13:10",
+          "13:50",
+          "14:30",
+          "15:10",
+          "16:00",
+          "16:50",
+          "17:40",
+          "18:40",
+          "19:45"
+        ]
+      }
+    },
+    "holiday": {
+      "label": "Спеціальний святковий графік",
+      "departures": {
+        "1": [
+          "05:20",
+          "06:10",
+          "07:10",
+          "08:10",
+          "09:10",
+          "10:30",
+          "12:00",
+          "13:40",
+          "15:20",
+          "17:15"
+        ],
+        "2": [
+          "05:40",
+          "06:40",
+          "07:40",
+          "08:40",
+          "09:50",
+          "11:10",
+          "12:50",
+          "14:30",
+          "16:20"
+        ]
+      }
+    }
+  },
+  "calendar": {
+    "weekdays": "workday",
+    "weekends": "weekend",
+    "exceptions": {
+      "2024-05-05": "holiday",
+      "2025-04-20": "holiday"
+    }
+  }
+}
