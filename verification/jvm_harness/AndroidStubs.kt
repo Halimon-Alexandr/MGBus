@@ -1,8 +1,10 @@
 package android.content
 import android.content.res.AssetManager
+import java.io.File
 open class Context {
     open val applicationContext: Context get() = this
     open val assets: AssetManager get() = error("Not supplied")
+    open val filesDir: File get() = error("Not supplied")
     private val prefs = mutableMapOf<String, SharedPreferences>()
     fun getSharedPreferences(name: String, mode: Int): SharedPreferences = prefs.getOrPut(name) { SharedPreferences() }
     companion object { const val MODE_PRIVATE = 0 }

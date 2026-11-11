@@ -167,7 +167,7 @@ class LocalSchedule(val data: ScheduleData) {
         val start = day(now)
         val end = start.clone() as Calendar
         end.add(Calendar.DATE, 1)
-        val all = (-3..0).flatMap { shift ->
+        val all = (-1..0).flatMap { shift ->
             val date = start.clone() as Calendar
             date.add(Calendar.DATE, shift)
             hits(stopId, date)
@@ -179,7 +179,7 @@ class LocalSchedule(val data: ScheduleData) {
     fun select(stopId: String, now: Long, offset: Int, anchor: ScheduleHit? = null,
         filter: ScheduleFilter = ScheduleFilter()): ScheduleHit? {
         val center = day(anchor?.arrivalMillis ?: now)
-        val all = sorted((-7..7).flatMap { shift ->
+        val all = sorted((-1..1).flatMap { shift ->
             val date = center.clone() as Calendar
             date.add(Calendar.DATE, shift)
             hits(stopId, date)

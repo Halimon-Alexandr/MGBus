@@ -49,10 +49,20 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
     private var tripJob: Job? = null
     private var tripAnchor: BusInfo? = null
     private var followNearest = true
+    private var foregroundObserved = false
     private var announcementId = 0L
     private val announcementSession = UUID.randomUUID().toString()
 
-    init { loadStops() }
+    init {
+        loadStops()
+        val initialLoad = stopsJob
+        viewModelScope.launch {
+            if (repository.updateSchedule()) {
+                initialLoad?.join()
+                applyUpdatedSchedule()
+            }
+        }
+    }
 
     fun clearAnnouncement() { mutableState.update { it.copy(announcement = null) } }
 
@@ -107,14 +117,35 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
         changeSelection(stop, current.filter.copy(direction = direction))
     }
 
-    private fun changeSelection(stop: String, requested: ScheduleFilter) {
+    private suspend fun applyUpdatedSchedule() {
+        val stops = repository.stops()
+        val routes = repository.routeNumbers()
+        val previous = mutableState.value
+        val chosen = initialStop(stops, previous.selectedStop ?: repository.lastStop())
+        mutableState.update {
+            it.copy(stops = stops, routes = routes, loadingStops = false, stopsError = null)
+        }
+        if (chosen != null) changeSelection(chosen, previous.filter, announceResult = false)
+    }
+
+    private fun changeSelection(
+        stop: String,
+        requested: ScheduleFilter,
+        announceResult: Boolean = true,
+        preserveCurrentBus: Boolean = true
+    ) {
         busJob?.cancel()
         dayJob?.cancel()
         followNearest = true
+        val sameStop = mutableState.value.selectedStop == stop
         mutableState.update {
-            it.copy(selectedStop = stop, filter = requested, bus = null, loadingBus = true,
-                message = "", stale = false, updatedAt = null, announcement = null,
-                directions = emptyList(), dayEntries = emptyList(), dayLabel = "", dayError = null, loadingDay = false)
+            it.copy(selectedStop = stop, filter = requested,
+                bus = it.bus.takeIf { sameStop && preserveCurrentBus }, loadingBus = true,
+                message = "", stale = false,
+                updatedAt = it.updatedAt.takeIf { sameStop && preserveCurrentBus },
+                announcement = if (announceResult) null else it.announcement,
+                directions = if (sameStop) it.directions else emptyList(),
+                dayEntries = emptyList(), dayLabel = "", dayError = null, loadingDay = false)
         }
         busJob = viewModelScope.launch {
             try {
@@ -129,15 +160,30 @@ class BusViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val reset = if (requested.direction != null && options.filter.direction == null)
                     "Напрямок скинуто: усі напрямки. " else ""
-                announce(reset + resultText(stop, bus))
+                if (announceResult) announce(reset + resultText(stop, bus))
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { showBusError(e, silent = false) }
+            catch (e: Exception) { showBusError(e, silent = !announceResult) }
         }
     }
 
     fun refresh() {
         followNearest = true
         requestBus(0)
+    }
+
+    /**
+     * A retained ViewModel can still contain a route filter or a manually browsed trip when the
+     * activity returns from the background. Keep the saved stop, but start a new foreground
+     * session from the nearest bus across every route and direction.
+     */
+    fun onAppForegrounded() {
+        if (!foregroundObserved) {
+            foregroundObserved = true
+            return
+        }
+        val stop = mutableState.value.selectedStop ?: return
+        clearAnnouncement()
+        changeSelection(stop, ScheduleFilter(), announceResult = false, preserveCurrentBus = false)
     }
 
     fun previous() = adjacent(-1)

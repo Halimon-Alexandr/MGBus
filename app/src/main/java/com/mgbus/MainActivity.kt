@@ -1,6 +1,7 @@
 package com.mgbus
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.accessibility.AccessibilityManager
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -33,7 +36,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -59,12 +64,25 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun BusTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) {
-        darkColorScheme(primary = Color(0xFF9CCAFF), secondary = Color(0xFF80D5CC))
-    } else {
-        lightColorScheme(primary = Color(0xFF155DA8), secondary = Color(0xFF006B61))
+    val dark = isSystemInDarkTheme()
+    val context = LocalContext.current
+    val colors = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context)
+        dark -> darkColorScheme(primary = Color(0xFF9CCAFF), secondary = Color(0xFF80D5CC))
+        else -> lightColorScheme(
+            primary = Color(0xFF155DA8),
+            secondary = Color(0xFF006B61),
+            background = Color(0xFFF7F9FC),
+            surface = Color(0xFFF7F9FC)
+        )
     }
-    MaterialTheme(colorScheme = colors, content = content)
+    val shapes = Shapes(
+        small = RoundedCornerShape(12.dp),
+        medium = RoundedCornerShape(20.dp),
+        large = RoundedCornerShape(28.dp)
+    )
+    MaterialTheme(colorScheme = colors, shapes = shapes, content = content)
 }
 
 /** Один запит на оголошення: окремо від текстових рядків і без зміни фокусу. */
@@ -92,7 +110,7 @@ private fun ResultAnnouncements(event: BusAnnouncement?, ready: Boolean) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun BusApp(state: BusUiState, model: BusViewModel) {
     // Діалоги залишають головний екран у дереві, щоб зберігати місце фокусу.
@@ -108,7 +126,7 @@ private fun BusApp(state: BusUiState, model: BusViewModel) {
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            model.tick()
+            model.onAppForegrounded()
             if (dayScreenOpen) model.loadDaySchedule(silent = true)
             while (isActive) {
                 delay(30_000)
@@ -123,9 +141,24 @@ private fun BusApp(state: BusUiState, model: BusViewModel) {
     }
 
     Scaffold(topBar = {
-        TopAppBar(title = {
-            Text(if (showingTrip) "Розклад поточного рейсу" else if (showingDay) "Розклад на сьогодні" else "MGBus",
-                modifier = Modifier.semantics { heading() })
+        CenterAlignedTopAppBar(title = {
+            if (!showingTrip && !showingDay) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().clearAndSetSemantics {
+                        contentDescription = "Могилів-Подільський. Графік руху автобусів"
+                        heading()
+                    },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Могилів-Подільський", style = MaterialTheme.typography.titleLarge)
+                    Text("Графік руху автобусів", style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                Text(
+                    if (showingTrip) "Розклад поточного рейсу" else "Розклад на сьогодні",
+                    modifier = Modifier.semantics { heading() }
+                )
+            }
         })
     }) { padding ->
         if (showingTrip) {
@@ -139,100 +172,89 @@ private fun BusApp(state: BusUiState, model: BusViewModel) {
                 Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Могилів-Подільський", style = MaterialTheme.typography.titleMedium)
-                OutlinedButton(
-                    onClick = { picker = "stop" }, enabled = state.stops.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                ) { Text(state.selectedStop?.let { "Зупинка: $it" } ?: "Обрати зупинку") }
+                StopSelectionCard(
+                    stop = state.selectedStop,
+                    enabled = state.stops.isNotEmpty(),
+                    onClick = { picker = "stop" }
+                )
 
-                if (state.loadingStops) Text("Завантаження розкладу…")
                 state.stopsError?.let {
                     Text(it, color = MaterialTheme.colorScheme.error)
                     OutlinedButton(onClick = model::loadStops) { Text("Повторити") }
                 }
 
                 if (state.selectedStop != null) {
-                    // Рядки фільтрів залишаються навіть без знайденого рейсу.
-                    // Положення елементів стабільне під час зміни фільтра й завантаження.
-                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val routeText = (state.bus?.number ?: state.filter.routeNumber)
-                                ?.let { "Автобус № $it" } ?: "Автобус"
-                            val directionText = (state.bus?.direction ?: state.filter.direction)
-                                ?.let { "У напрямку $it" } ?: "Напрямок"
-                            FilterResultRow(routeText, MaterialTheme.typography.headlineMedium,
-                                "Змінити маршрут", onClick = { picker = "route" })
-                            FilterResultRow(directionText, MaterialTheme.typography.titleLarge,
-                                "Змінити напрямок", onClick = { picker = "direction" })
-                            state.bus?.let { bus ->
-                                Text("Прибуття: ${bus.arrivalDate.lowercase()}, о ${bus.arrival}",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
-                                Text("Час очікування: ${bus.timeLeft}",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
-                                if (state.stale) Text("Показано попередні дані",
-                                    modifier = Modifier.padding(horizontal = 8.dp))
-                            }
-                            val filterSummary = if (state.filter.routeNumber == null && state.filter.direction == null) {
-                                "Усі маршрути й напрямки"
-                            } else {
-                                val route = state.filter.routeNumber?.let { "Лише № $it" } ?: "Усі маршрути"
-                                val direction = state.filter.direction?.let { "лише до $it" } ?: "усі напрямки"
-                                "$route · $direction"
-                            }
-                            Text(filterSummary,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                        }
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = state.filter.routeNumber != null,
+                            onClick = { picker = "route" },
+                            label = { Text("Маршрут: ${state.filter.routeNumber ?: "усі"}") },
+                            colors = scheduleFilterColors()
+                        )
+                        FilterChip(
+                            selected = state.filter.direction != null,
+                            onClick = { picker = "direction" },
+                            label = { Text("Напрямок: ${state.filter.direction ?: "усі"}") },
+                            colors = scheduleFilterColors()
+                        )
                     }
+
+                    state.bus?.let { bus -> BusResultCard(bus, state.stale) }
                 }
 
                 if (state.message.isNotBlank()) Text(state.message)
 
                 if (state.selectedStop != null) {
-                    OutlinedButton(
+                    NavigationActionCard(
+                        title = "Повний розклад на сьогодні",
+                        subtitle = "Усі рейси вибраної зупинки",
                         onClick = { model.clearAnnouncement(); showingDay = true; model.loadDaySchedule() },
-                        enabled = !state.loadingBus,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    ) { Text("Повний розклад на сьогодні") }
-                    OutlinedButton(
+                        enabled = true
+                    )
+                    NavigationActionCard(
+                        title = "Розклад поточного рейсу",
+                        subtitle = "Усі зупинки вибраного автобуса",
                         onClick = {
                             state.bus?.let { bus ->
                                 model.loadTripSchedule(bus)
                                 showingTrip = true
                             }
                         },
-                        enabled = state.bus != null,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    ) { Text("Розклад поточного рейсу") }
+                        enabled = state.bus != null
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        FilledTonalIconButton(
+                        TripNavigationButton(
+                            label = "Попередній",
+                            iconRes = R.drawable.ic_previous_trip,
                             onClick = model::previous,
                             enabled = state.bus != null,
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(painterResource(R.drawable.ic_previous_trip),
-                                contentDescription = "Попередній рейс", modifier = Modifier.size(28.dp))
-                        }
-                        FilledIconButton(onClick = model::refresh, modifier = Modifier.size(56.dp)) {
-                            Icon(painterResource(R.drawable.ic_refresh_schedule),
-                                contentDescription = "Оновити", modifier = Modifier.size(28.dp))
-                        }
-                        FilledTonalIconButton(
+                            primary = false,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TripNavigationButton(
+                            label = "Оновити",
+                            iconRes = R.drawable.ic_refresh_schedule,
+                            onClick = model::refresh,
+                            enabled = true,
+                            primary = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TripNavigationButton(
+                            label = "Наступний",
+                            iconRes = R.drawable.ic_next_trip,
                             onClick = model::next,
                             enabled = state.bus != null,
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(painterResource(R.drawable.ic_next_trip),
-                                contentDescription = "Наступний рейс", modifier = Modifier.size(28.dp))
-                        }
+                            primary = false,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -257,31 +279,175 @@ private fun BusApp(state: BusUiState, model: BusViewModel) {
     }
 }
 
-/** Увесь рядок — одна кнопка доступності; стрілка декоративна. */
 @Composable
-private fun FilterResultRow(
-    text: String,
-    style: TextStyle,
-    actionLabel: String,
-    onClick: () -> Unit
-) {
-    val arrowColor = MaterialTheme.colorScheme.onPrimaryContainer
-    Row(
+private fun StopSelectionCard(stop: String?, enabled: Boolean, onClick: () -> Unit) {
+    Surface(
         modifier = Modifier.fillMaxWidth()
-            .clickable(role = Role.Button, onClickLabel = actionLabel, onClick = onClick)
-            .heightIn(min = 56.dp)
-            .padding(horizontal = 8.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .clickable(enabled = enabled, role = Role.Button, onClickLabel = "Змінити зупинку", onClick = onClick)
+            .semantics(mergeDescendants = true) { },
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp
     ) {
-        Text(text = text, style = style, modifier = Modifier.weight(1f))
-        Canvas(Modifier.size(20.dp).clearAndSetSemantics { }) {
-            val stroke = 2.dp.toPx()
-            drawLine(arrowColor, Offset(size.width * 0.2f, size.height * 0.35f),
-                Offset(size.width * 0.5f, size.height * 0.65f), strokeWidth = stroke, cap = StrokeCap.Round)
-            drawLine(arrowColor, Offset(size.width * 0.5f, size.height * 0.65f),
-                Offset(size.width * 0.8f, size.height * 0.35f), strokeWidth = stroke, cap = StrokeCap.Round)
+        Row(
+            Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Зупинка", style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary)
+                Text(stop ?: "Оберіть зупинку", style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold)
+            }
+            RightChevron(MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@Composable
+private fun BusResultCard(bus: BusInfo, stale: Boolean) {
+    val spoken = buildString {
+        append(bus.announcement)
+        if (stale) append(" Показано попередні дані.")
+    }
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = spoken },
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Прибуття", style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text(
+                bus.arrival,
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                "${bus.arrivalDate} · Автобус № ${bus.number}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                "У напрямку ${bus.direction}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    Text("Час очікування", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    Text(bus.timeLeft, style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                }
+            }
+            if (stale) {
+                Text("Показано попередні дані", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+private fun scheduleFilterColors() = FilterChipDefaults.filterChipColors(
+    containerColor = MaterialTheme.colorScheme.primaryContainer,
+    labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.38f),
+    disabledLabelColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.38f)
+)
+
+@Composable
+private fun NavigationActionCard(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    enabled: Boolean
+) {
+    val contentColor = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer
+        else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.38f)
+    Surface(
+        modifier = Modifier.fillMaxWidth()
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .semantics(mergeDescendants = true) { },
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = contentColor,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor.copy(alpha = if (enabled) 0.72f else 1f))
+            }
+            RightChevron(contentColor)
+        }
+    }
+}
+
+@Composable
+private fun TripNavigationButton(
+    label: String,
+    iconRes: Int,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    primary: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val tonalColors = if (isSystemInDarkTheme()) {
+        IconButtonDefaults.filledTonalIconButtonColors()
+    } else {
+        IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.38f),
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+        )
+    }
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (primary) {
+            FilledIconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(56.dp)) {
+                Icon(painterResource(iconRes), contentDescription = label, modifier = Modifier.size(28.dp))
+            }
+        } else {
+            FilledTonalIconButton(
+                onClick = onClick,
+                enabled = enabled,
+                colors = tonalColors,
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(painterResource(iconRes), contentDescription = label, modifier = Modifier.size(28.dp))
+            }
+        }
+        Text(label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().clearAndSetSemantics { })
+    }
+}
+
+@Composable
+private fun RightChevron(color: Color) {
+    Canvas(Modifier.size(20.dp).clearAndSetSemantics { }) {
+        val stroke = 2.dp.toPx()
+        drawLine(color, Offset(size.width * 0.35f, size.height * 0.2f),
+            Offset(size.width * 0.65f, size.height * 0.5f), strokeWidth = stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(size.width * 0.65f, size.height * 0.5f),
+            Offset(size.width * 0.35f, size.height * 0.8f), strokeWidth = stroke, cap = StrokeCap.Round)
     }
 }
 
@@ -299,7 +465,6 @@ private fun TripScheduleScreen(
             Text("Автобус № ${trip.number}", style = MaterialTheme.typography.titleLarge)
             Text("Дата рейсу: ${trip.date}", modifier = Modifier.padding(vertical = 8.dp))
         }
-        if (state.loadingTrip) Text("Завантаження розкладу…")
         state.tripError?.let {
             Text(it, color = MaterialTheme.colorScheme.error)
             TextButton(onClick = onRetry) { Text("Повторити") }
@@ -343,7 +508,6 @@ private fun DayScheduleScreen(state: BusUiState, modifier: Modifier, onBack: () 
         Text(state.selectedStop.orEmpty(), style = MaterialTheme.typography.titleMedium)
         Text("Маршрут: ${state.filter.routeNumber ?: "усі"}. Напрямок: ${state.filter.direction ?: "усі напрямки"}.")
         Text(state.dayLabel, modifier = Modifier.padding(vertical = 8.dp))
-        if (state.loadingDay) Text("Завантаження розкладу…")
         state.dayError?.let {
             Text(it, color = MaterialTheme.colorScheme.error)
             TextButton(onClick = onRetry) { Text("Повторити") }

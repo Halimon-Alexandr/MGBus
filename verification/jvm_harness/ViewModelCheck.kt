@@ -24,6 +24,7 @@ fun main(args: Array<String>) = runBlocking {
     suspend fun action(block: () -> Unit) { withContext(main) { block() };settled() }
     try {
         settled()
+        withContext(main) { model.onAppForegrounded() }
         verify(model.state.value.selectedStop == "Бронниця", "Default first stop")
         verify(model.state.value.announcement!!.text.contains("Зупинка: Бронниця."), "Startup speaks stop")
         verify(model.state.value.announcement!!.text.contains("Автобус номер"), "Startup speaks full result")
@@ -81,6 +82,14 @@ fun main(args: Array<String>) = runBlocking {
         settled()
         verify(model.state.value.selectedStop == "Верхня Немія" && model.state.value.bus!!.number == "2", "Latest selection wins")
         verify(model.state.value.announcement!!.text.contains("Зупинка: Верхня Немія."), "No outdated result announced")
+        withContext(main) { model.onAppForegrounded() }
+        verify(model.state.value.bus == null && model.state.value.loadingBus,
+            "Foreground immediately clears the stale bus")
+        settled()
+        verify(model.state.value.selectedStop == "Верхня Немія", "Foreground keeps saved stop")
+        verify(model.state.value.filter == ScheduleFilter(), "Foreground clears route and direction")
+        verify(model.state.value.bus!!.hit.arrivalMillis >= System.currentTimeMillis() - 60_000L,
+            "Foreground selects the nearest current bus")
         val restored = withContext(main) { BusViewModel(app) }
         withTimeout(10000) { while (restored.state.value.bus == null) delay(10) }
         withContext(main) { }
